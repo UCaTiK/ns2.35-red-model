@@ -1,0 +1,47 @@
+#!/bin/bash
+# split_queue
+# Splitting the queue into two parts: instantaneous and EWMA
+
+# Указываем каталог, где искать файлы
+input_dir="processing/red"
+# Каталог для сохранения выходных файлов
+output_dir="parsed"
+
+# Создаем каталог parsed, если его нет
+mkdir -p "$output_dir"
+mkdir -p "$output_dir/inst"
+mkdir -p "$output_dir/avg"
+
+# Файл по умолчанию
+base_name="default"
+
+# Если передан аргумент, используем его как часть имени файла
+if [[ -n $1 ]]; then
+    base_name="$1"
+fi
+
+# Строим полный путь к входному файлу
+input_file="${input_dir}/red-queue_${base_name}.tr"
+
+# Проверяем наличие файла
+if [[ ! -f "$input_file" ]]; then
+    echo "Файл $input_file не найден в каталоге $input_dir!"
+    exit 1
+fi
+
+# Генерация имен выходных файлов в каталоге parsed
+queue_inst_file="${output_dir}/inst/queue_inst_${base_name}.tr"
+queue_avg_file="${output_dir}/avg/queue_avg_${base_name}.tr"
+
+# Обработка файла
+awk '/Q/ {print($2 ,$3) > "'"$queue_inst_file"'"}' "$input_file"
+awk '/a/ {print($2 ,$3) > "'"$queue_avg_file"'"}' "$input_file"
+
+# Уникальные строки для среднего значения очереди
+sort -u -t" " -k1,1 -m "$queue_avg_file" > tmp_${base_name}.tr
+mv tmp_${base_name}.tr "$queue_avg_file"
+
+echo "Processed $input_file:"
+echo " - Instantaneous queue saved to $queue_inst_file"
+echo " - Average queue saved to $queue_avg_file"
+

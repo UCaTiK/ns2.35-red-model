@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Каталоги для входных и выходных файлов
+input_dir="parsed/avg"
+output_dir="result/avg_queue"
+
+# По умолчанию имя файла и результирующий файл
+input_file_default="${input_dir}/queue_avg_default.tr"
+output_file_default="${output_dir}/queue_avg_default.pdf"
+
+# Если передан аргумент, используем его вместо файла по умолчанию
+if [[ -n "$1" ]]; then
+    base_name="$1"
+    input_file="${input_dir}/queue_avg_${base_name}.tr"
+    output_file="${output_dir}/queue_avg_${base_name}.pdf"
+else
+    input_file="$input_file_default"
+    output_file="$output_file_default"
+fi
+
+# Проверка наличия входного файла
+if [[ ! -f "$input_file" ]]; then
+    echo "Файл $input_file не найден в каталоге $input_dir!"
+    exit 1
+fi
+
+# Создаем каталог для результатов, если его нет
+mkdir -p "$output_dir"
+
+# Вызываем gnuplot с необходимыми параметрами
+gnuplot <<EOF
+set encoding utf8
+set term pdfcairo enhanced mono dashed font ",20"
+set key off
+set grid x y
+set ylabel 'Average Queue Length [pkt]'
+set xlabel 't [s]'
+set output "$output_file"
+plot "$input_file" using 1:2 title "Average Queue Length" with lines
+EOF
+
